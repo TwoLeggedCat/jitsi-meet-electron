@@ -165,7 +165,7 @@ function createJitsiMeetWindow() {
     setApplicationMenu();
 
     // Check for Updates.
-    if (!process.mas) {
+    if (false && !process.mas) {
         autoUpdater.checkForUpdatesAndNotify();
     }
 
