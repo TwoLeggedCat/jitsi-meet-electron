@@ -11,6 +11,42 @@ on:
       - '*'
 
 jobs:
+  build-linux:
+    name: Linux
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-node@v1
+      with:
+        node-version: '12.x'
+    - name: Install dependencies
+      run: sudo apt-get install libx11-dev zlib1g-dev libpng-dev libxtst-dev
+    - name: Build it
+      run: |
+        npm install
+        npm run dist
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: dist-linux
+        path: dist
+  build-windows:
+    name: Windows
+    runs-on: windows-2019
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-node@v1
+      with:
+        node-version: '12.x'
+    - name: Build it
+      run: |
+        npm install
+        npm run dist
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: dist-windows
+        path: dist
   build-mac:
     name: macOS
     runs-on: macos-10.15
