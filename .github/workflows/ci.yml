@@ -14,6 +14,7 @@ jobs:
   build-linux:
     name: Linux
     runs-on: ubuntu-18.04
+    if: "contains(github.event.head_commit.message, '[build]')"
     steps:
     - uses: actions/checkout@v2
     - uses: actions/setup-node@v1
@@ -33,6 +34,7 @@ jobs:
   build-windows:
     name: Windows
     runs-on: windows-2019
+    if: "contains(github.event.head_commit.message, '[build]')"
     steps:
     - uses: actions/checkout@v2
     - uses: actions/setup-node@v1
