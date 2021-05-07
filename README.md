@@ -1,4 +1,6 @@
-Fork of the Jitsi meet electron client to re-enable remote control. Do not use this unless you understand the risk behind it and the reasons it was disabled. Download from the releases section.
+Fork of the Jitsi meet electron client to re-enable remote control.
+
+# **DO NOT USE THIS UNLESS YOU UNDERSTAND THE RISK BEHIND IT AND THE [REASONS IT WAS DISABLED](https://github.com/jitsi/jitsi-meet-electron/security/advisories/GHSA-x4h8-fhrp-pm3p)**.
 
 This fork will be updated periodically from upstream. It will not always be based off of a commit that was released, mind you, so the latest release *here* might not be the same as the latest release *there*, even aside from the direct modifications of this fork.
 
@@ -8,7 +10,9 @@ Please do not pester the Jitsi team if you have problems related to this fork th
 
 Note that I know nothing about the remote control system in Jitsi, and can probably not fix any bugs in it. Whether or not they plan on continuing to do so while it's disabled, I do not know, and you'd have to ask them.
 
-# Links
+## Links
 The following releases were based off of upstream releases:
 
 [rc-2.8.6](https://github.com/TwoLeggedCat/jitsi-meet-electron/releases/tag/rc-2.8.6)
+
+If you have a GitHub account, you may also download from the worflows section to get builds directly from the actions, giving me no oppurtunity to tamper with them (even though they're the same files I upload as releases). Requiring an account for this is GitHub's decision, not mine.
