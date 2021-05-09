@@ -13,6 +13,6 @@ Note that I know nothing about the remote control system in Jitsi, and can proba
 ## Links
 The following releases were based off of upstream releases:
 
-[rc-2.8.6](https://github.com/TwoLeggedCat/jitsi-meet-electron/releases/tag/rc-2.8.6)
+[rc-2.8.6](https://github.com/TwoLeggedCat/jitsi-meet-electron/releases/tag/rc-2.8.6) (actually I borked this one; there's one extra commit in here but it was just a temporary downgrade of electron-builder so shouldn't be a problem.)
 
 If you have a GitHub account, you may also download from the worflows section to get builds directly from the actions, giving me no oppurtunity to tamper with them (even though they're the same files I upload as releases). Requiring an account for this is GitHub's decision, not mine.
