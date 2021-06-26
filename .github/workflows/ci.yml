@@ -29,8 +29,8 @@ jobs:
     - name: Upload build artifacts
       uses: actions/upload-artifact@v1
       with:
-        name: dist-linux
-        path: dist
+        name: jitsi-meet-amd64.deb
+        path: dist/jitsi-meet-amd64.deb
   build-windows:
     name: Windows
     runs-on: windows-2019
@@ -47,8 +47,8 @@ jobs:
     - name: Upload build artifacts
       uses: actions/upload-artifact@v1
       with:
-        name: dist-windows
-        path: dist
+        name: jitsi-meet.exe
+        path: dist/jitsi-meet.exe
   build-mac:
     name: macOS
     runs-on: macos-10.15
