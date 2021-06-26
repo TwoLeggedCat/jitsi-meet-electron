@@ -35,6 +35,11 @@ type Props = {
     _alwaysOnTopWindowEnabled: boolean;
 
     /**
+     * Disable automatic gain control.
+     */
+     _disableAGC: boolean;
+
+    /**
      * Email of user.
      */
     _email: string;
@@ -211,6 +216,7 @@ class Conference extends Component<Props, State> {
         };
 
         const configOverwrite = {
+            disableAGC: this.props._disableAGC,
             startWithAudioMuted: this.props._startWithAudioMuted,
             startWithVideoMuted: this.props._startWithVideoMuted
         };
@@ -260,7 +266,11 @@ class Conference extends Component<Props, State> {
             setupAlwaysOnTopRender(this._api);
         }
 
-        setupWiFiStats(iframe);
+        // Disable WiFiStats on mac due to jitsi-meet-electron#585
+        if (window.jitsiNodeAPI.platform !== 'darwin') {
+            setupWiFiStats(iframe);
+        }
+
         setupPowerMonitorRender(this._api);
     }
 
@@ -403,6 +413,7 @@ class Conference extends Component<Props, State> {
 function _mapStateToProps(state: Object) {
     return {
         _alwaysOnTopWindowEnabled: getSetting(state, 'alwaysOnTopWindowEnabled', true),
+        _disableAGC: state.settings.disableAGC,
         _email: state.settings.email,
         _name: state.settings.name,
         _serverURL: state.settings.serverURL,
