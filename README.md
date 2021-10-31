@@ -1,197 +1,24 @@
-# Jitsi Meet Electron
+Fork of the Jitsi meet electron client to re-enable remote control.
 
-Desktop application for [Jitsi Meet] built with [Electron].
+# **DO NOT USE THIS UNLESS YOU UNDERSTAND THE RISK BEHIND IT AND THE [REASONS IT WAS DISABLED](https://github.com/jitsi/jitsi-meet-electron/security/advisories/GHSA-x4h8-fhrp-pm3p)**.
 
-![](screenshot.png)
+This fork will be updated periodically from upstream. It will not always be based off of a commit that was released, mind you, so the latest release *here* might not be the same as the latest release *there*, even aside from the direct modifications of this fork.
 
-## Features
+These binaries have not been tested on Windows and Linux, as I only use them on macOS, but I see no reason they would have problems as the only important change was one line of code (which is the same change for all platforms).
 
-- [End-to-End Encryption](https://jitsi.org/blog/e2ee/) support (BETA)
-- Works with any Jitsi Meet deployment
-- Builtin auto-updates
-- ~Remote control~ (currently [disabled](https://github.com/jitsi/jitsi-meet-electron/issues/483) due to [security issues](https://github.com/jitsi/security-advisories/blob/master/advisories/JSA-2020-0001.md))
-- Always-On-Top window
-- Support for deeplinks such as `jitsi-meet://myroom` (will open `myroom` on the configured Jitsi instance) or `jitsi-meet://jitsi.mycompany.com/myroom` (will open `myroom` on the Jitsi instance running on `jitsi.mycompany.com`)
+Please do not pester the Jitsi team if you have problems related to this fork that don't occur on their client.
 
-## Installation
+Note that I know nothing about the remote control system in Jitsi, and can probably not fix any bugs in it. Whether or not they plan on continuing to do so while it's disabled, I do not know, and you'd have to ask them.
 
-Download our latest release and you're off to the races!
+## Links
+The following releases were based off of upstream releases:
 
-| Windows | macOS | GNU/Linux (AppImage) | GNU/Linux (Deb) |
-| -- | -- | -- | -- |
-| [Download](https://github.com/jitsi/jitsi-meet-electron/releases/latest/download/jitsi-meet.exe) | [Download](https://github.com/jitsi/jitsi-meet-electron/releases/latest/download/jitsi-meet.dmg) | [Download](https://github.com/jitsi/jitsi-meet-electron/releases/latest/download/jitsi-meet-x86_64.AppImage) | [Download](https://github.com/jitsi/jitsi-meet-electron/releases/latest/download/jitsi-meet-amd64.deb) |
+[rc-2.8.6](https://github.com/TwoLeggedCat/jitsi-meet-electron/releases/tag/rc-2.8.6) (actually I borked this one; there's one extra commit in here but it was just a temporary downgrade of electron-builder so shouldn't be a problem.)
 
-NOTE: The GNU/LInux builds are 64-bit only.
+[2.8.7](https://github.com/TwoLeggedCat/jitsi-meet-electron/releases/tag/rc-2.8.7)
 
-### Third-Party builds
+[2.8.8](https://github.com/TwoLeggedCat/jitsi-meet-electron/releases/tag/v2.8.8)
 
-[<img src="https://flathub.org/assets/badges/flathub-badge-en.svg"
-     alt="Download On Flathub"
-     height="60">](https://flathub.org/apps/details/org.jitsi.jitsi-meet)
+[2.9.1](https://github.com/TwoLeggedCat/jitsi-meet-electron/releases/tag/v2.9.1)
 
-### Homebrew
-
-For *macOS* user, you can install the application using the following command:
-
-```
-brew install --cask jitsi-meet
-```
-
-### Using it with your own Jitsi Meet installation
-
-:warning: The following additional HTTP headers are known to break the Electron App:
-
-```
-Content-Security-Policy "frame-ancestors [looks like any value is bad]";
-X-Frame-Options "DENY";
-```
-A working Content Security Policy looks like that:
-```
-Content-Security-Policy "img-src 'self' 'unsafe-inline' data:; script-src 'self' 'unsafe-inline' 'wasm-eval'; style-src 'self' 'unsafe-inline'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none';";
-```
-
-## Development
-
-If you want to hack on this project, here is how you do it.
-
-<details><summary>Show building instructions</summary>
-
-#### Installing dependencies
-
-Install Node.js 14 first (or if you use [nvm](https://github.com/nvm-sh/nvm), switch to Node.js 14 by running `nvm use`).
-
-<details><summary>Extra dependencies for Windows</summary>
-
-```bash
-npm install --global --production windows-build-tools
-npm config set msvs_version 2017
-```
-</details>
-
-<details><summary>Extra dependencies for GNU/Linux</summary>
-
-X11, PNG and zlib development packages are necessary. On Debian-like systems then can be installed as follows:
-
-```bash
-sudo apt install libx11-dev zlib1g-dev libpng-dev libxtst-dev
-```
-</details>
-
-Install all required packages:
-
-```bash
-npm install
-```
-
-#### Starting in development mode
-
-```bash
-npm start
-```
-
-The debugger tools are available when running in dev mode and can be activated with keyboard shortcuts as defined here https://github.com/sindresorhus/electron-debug#features.
-
-It can also be displayed automatically from the `SHOW_DEV_TOOLS` environment variable such as:
-
-```bash
-SHOW_DEV_TOOLS=true npm start
-```
-
-or from the application `--show-dev-tools` command line flag.
-
-#### Building the production distribution
-
-```bash
-npm run dist
-```
-
-#### Working with jitsi-meet-electron-utils
-
-[jitsi-meet-electron-utils] is a helper package which implements many features
-such as remote control and the always-on-top window. If new features are to be
-added / tested, running with a local version of these utils is very handy, here
-is how to do that.
-
-By default the jitsi-meet-electron-utils is build from its git repository
-sources. The default dependency path in package.json is:
-
-```json
-"jitsi-meet-electron-utils": "jitsi/jitsi-meet-electron-utils"
-```
-
-To work with local copy you must change the path to:
-
-```json
-"jitsi-meet-electron-utils": "file:///Users/name/jitsi-meet-electron-utils-copy",
-```
-
-To build the project you must force it to take the sources as `npm update` will
-not do it.
-
-```bash
-npm install jitsi-meet-electron-utils --force
-```
-
-NOTE: Also check the [jitsi-meet-electron-utils README] to see how to configure
-your environment.
-
-</details>
-
-## Known issues
-
-### Windows
-
-A warning will show up mentioning the app is unsigned upon first install. This is expected.
-
-### macOS
-
-On macOS Catalina a warning will be displayed on first install. The app won't open unless "open" is pressed. This dialog is only shown once.
-Builtin auto-updates are not yet handled in macOS due to unsigned build.
-
-### GNU/Linux
-
-If after downloading it, you can't execute the file directly, try running `chmod u+x ./jitsi-meet-x86_64.AppImage`
-
-<details><summary>NOTE for old GNU/Linux distributions</summary>
-
-You might get the following error:
-
-```
-FATAL:nss_util.cc(632)] NSS_VersionCheck("3.26") failed. NSS >= 3.26 is required.
-Please upgrade to the latest NSS, and if you still get this error, contact your
-distribution maintainer.
-```
-
-If you do, please install NSS (example for Debian / Ubuntu):
-
-```bash
-sudo apt-get install libnss3
-```
-
-</details>
-
-## Translations
-
-The json files are for all the strings inside the application and can be translated [here](/app/i18n/lang).
-
-New translations require the addition of a line in [index.js](/app/i18n/index.js).
-
-`Localize desktop file on linux` requires the addition of a line in [package.json](/package.json).
-Please search for `Comment[hu]` as an example to help add your translation of the English string `Jitsi Meet Desktop App` for your language.
-
-## License
-
-Apache 2. See the [LICENSE] file.
-
-## Community
-
-Jitsi is built by a large community of developers, if you want to participate,
-please join [community forum].
-
-[Jitsi Meet]: https://github.com/jitsi/jitsi-meet
-[Electron]: https://electronjs.org/
-[latest release]: https://github.com/jitsi/jitsi-meet-electron/releases/latest
-[jitsi-meet-electron-utils]: https://github.com/jitsi/jitsi-meet-electron-utils
-[jitsi-meet-electron-utils README]: https://github.com/jitsi/jitsi-meet-electron-utils/blob/master/README.md
-[community forum]: https://community.jitsi.org/
-[LICENSE]: LICENSE
+If you have a GitHub account, you may also download from the worflows section to get builds directly from the actions, giving me no oppurtunity to tamper with them (even though they're the same files I upload as releases). Requiring an account for this is GitHub's decision, not mine.

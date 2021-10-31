@@ -1,16 +1,7 @@
 name: CI
 
 on:
-  # Trigger the workflow on push or pull request,
-  # but only for the master branch
-  push:
-    branches:
-      - master
-    tags:
-      - '*'
-  pull_request:
-    branches:
-      - master
+  workflow_dispatch:
 
 jobs:
   build-linux:
@@ -24,11 +15,14 @@ jobs:
     - name: Install dependencies
       run: sudo apt-get install libx11-dev zlib1g-dev libpng-dev libxtst-dev
     - name: Build it
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         npm install
         npm run dist
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: jitsi-meet-amd64.deb
+        path: dist/jitsi-meet-amd64.deb
   build-mac:
     name: macOS
     runs-on: macos-10.15
@@ -43,12 +37,15 @@ jobs:
         sudo xcode-select -s "/Applications/Xcode_12.4.app"
         sudo rm -Rf /Library/Developer/CommandLineTools/SDKs/*
     - name: Build it
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         npm install
         npm run lint
         npm run dist
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: jitsi-meet.dmg
+        path: dist/jitsi-meet.dmg
   build-windows:
     name: Windows
     runs-on: windows-2019
@@ -58,8 +55,11 @@ jobs:
       with:
         node-version: '14.x'
     - name: Build it
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         npm install
         npm run dist
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: jitsi-meet.exe
+        path: dist/jitsi-meet.exe
