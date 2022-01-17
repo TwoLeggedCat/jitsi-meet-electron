@@ -14,18 +14,20 @@ const windowStateKeeper = require('electron-window-state');
 const {
     initPopupsConfigurationMain,
     getPopupTarget,
+    RemoteControlMain,
     setupAlwaysOnTopMain,
     setupPowerMonitorMain,
     setupScreenSharingMain
-} = require('jitsi-meet-electron-utils');
+} = require('@jitsi/electron-sdk');
 const path = require('path');
 const URL = require('url');
 const config = require('./app/features/config');
 const { openExternalLink } = require('./app/features/utils/openExternalLink');
 const pkgJson = require('./package.json');
-const { existsSync } = require('fs');
 
 const showDevTools = Boolean(process.env.SHOW_DEV_TOOLS) || (process.argv.indexOf('--show-dev-tools') > -1);
+
+const ENABLE_REMOTE_CONTROL = false;
 
 // We need this because of https://github.com/electron/electron/issues/18214
 app.commandLine.appendSwitch('disable-site-isolation-trials');
@@ -41,9 +43,6 @@ app.commandLine.appendSwitch('force-fieldtrials', 'WebRTC-Audio-Red-For-Opus/Ena
 if (!app.commandLine.hasSwitch('enable-features')) {
     app.commandLine.appendSwitch('enable-features', 'WebRTCPipeWireCapturer');
 }
-
-// Needed until robot.js is fixed: https://github.com/octalmage/robotjs/issues/580
-app.allowRendererProcessReuse = false;
 
 autoUpdater.logger = require('electron-log');
 autoUpdater.logger.transports.file.level = 'info';
@@ -181,18 +180,7 @@ function createJitsiMeetWindow() {
     });
 
     // Path to root directory.
-    let basePath = isDev ? __dirname : app.getAppPath();
-
-    // runtime detection on mac if this is a universal build with app-arm64.asar'
-    // as prepared in https://github.com/electron/universal/blob/master/src/index.ts
-    // if universal build, load the arch-specific real asar as the app does not load otherwise
-    if (process.platform === 'darwin' && existsSync(path.join(app.getAppPath(), '..', 'app-arm64.asar'))) {
-        if (process.arch === 'arm64') {
-            basePath = app.getAppPath().replace('app.asar', 'app-arm64.asar');
-        } else if (process.arch === 'x64') {
-            basePath = app.getAppPath().replace('app.asar', 'app-x64.asar');
-        }
-    }
+    const basePath = isDev ? __dirname : app.getAppPath();
 
     // URL for index.html which will be our entry point.
     const indexURL = URL.format({
@@ -215,8 +203,7 @@ function createJitsiMeetWindow() {
         minHeight: 600,
         show: false,
         webPreferences: {
-            enableBlinkFeatures: 'RTCInsertableStreams,WebAssemblySimd,WebAssemblyCSP',
-            enableRemoteModule: true,
+            enableBlinkFeatures: 'WebAssemblyCSP',
             contextIsolation: false,
             nativeWindowOpen: true,
             nodeIntegration: false,
@@ -232,6 +219,9 @@ function createJitsiMeetWindow() {
     setupAlwaysOnTopMain(mainWindow);
     setupPowerMonitorMain(mainWindow);
     setupScreenSharingMain(mainWindow, config.default.appName, pkgJson.build.appId);
+    if (ENABLE_REMOTE_CONTROL) {
+        new RemoteControlMain(mainWindow); // eslint-disable-line no-new
+    }
 
     mainWindow.webContents.on('new-window', (event, url, frameName) => {
         const target = getPopupTarget(url, frameName);
@@ -395,8 +385,4 @@ ipcMain.on('renderer-ready', () => {
             .webContents
             .send('protocol-data-msg', protocolDataForFrontApp);
     }
-});
-
-ipcMain.on('electron-store-exists', event => {
-    event.returnValue = existsSync(path.join(app.getPath('userData'), 'config.json'));
 });

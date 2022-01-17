@@ -22,3 +22,4 @@ The following releases were based off of upstream releases:
 [2.9.1](https://github.com/TwoLeggedCat/jitsi-meet-electron/releases/tag/v2.9.1)
 
 If you have a GitHub account, you may also download from the worflows section to get builds directly from the actions, giving me no oppurtunity to tamper with them (even though they're the same files I upload as releases). Requiring an account for this is GitHub's decision, not mine.
+
