@@ -10,6 +10,7 @@ import { push } from 'react-router-redux';
 import i18n from '../../../i18n';
 import config from '../../config';
 import { getSetting } from '../../settings';
+import { parseURLParams } from '../../utils/parseURLParams';
 
 import { conferenceEnded, conferenceJoined } from '../actions';
 import JitsiMeetExternalAPI from '../external_api';
@@ -71,6 +72,11 @@ class Conference extends Component<Props, State> {
      * Conference Object.
      */
     _conference: Object;
+
+    /**
+     * Whether the iframe was loaded or not.
+     */
+    _iframeLoaded: boolean;
 
     /**
      * Timer to cancel the joining if it takes too long.
@@ -149,6 +155,22 @@ class Conference extends Component<Props, State> {
     }
 
     /**
+     * Handle joining another another meeing while in one.
+     *
+     * @param {Object} prevProps - The previous props.
+     * @returns {void}
+     */
+    componentDidUpdate(prevProps) {
+        if (prevProps.location.key !== this.props.location.key) {
+
+            // Simulate a re-mount so the new meeting is joined.
+            this._iframeLoaded = false;
+            this.componentWillUnmount();
+            this.componentDidMount();
+        }
+    }
+
+    /**
      * Implements React's {@link Component#render()}.
      *
      * @returns {ReactElement}
@@ -168,18 +190,17 @@ class Conference extends Component<Props, State> {
      * @returns {void}
      */
     _loadConference() {
+        const appProtocolSurplus = `${config.appProtocolPrefix}://`;
+
+        // replace the custom url with https, otherwise new URL() raises 'Invalid URL'.
+        if (this._conference.serverURL.startsWith(appProtocolSurplus)) {
+            this._conference.serverURL = this._conference.serverURL.replace(appProtocolSurplus, 'https://');
+        }
         const url = new URL(this._conference.room, this._conference.serverURL);
         const roomName = url.pathname.split('/').pop();
         const host = this._conference.serverURL.replace(/https?:\/\//, '');
         const searchParameters = Object.fromEntries(url.searchParams);
-        const hashParameters = url.hash.substring(1).split('&')
-            .reduce((res, item) => {
-                const parts = item.split('=');
-
-                res[parts[0]] = parts[1];
-
-                return res;
-            }, {});
+        const hashParameters = parseURLParams(url);
 
         const locale = { lng: i18n.language };
         const urlParameters = {
@@ -187,31 +208,37 @@ class Conference extends Component<Props, State> {
             ...locale
         };
 
-        // override both old and new prejoin config options,
-        // old one for servers that do not understand the new option yet
-        // and new one for newly setup servers where the new option overrides
-        // the old if set.
+
         const configOverwrite = {
+            enableCalendarIntegration: false,
             disableAGC: this.props._disableAGC,
-            prejoinPageEnabled: true,
             prejoinConfig: {
                 enabled: true
             }
         };
+
+        const interfaceConfigOverwrite = {
+            SHOW_CHROME_EXTENSION_BANNER: false
+        };
+        let jwt;
 
         Object.entries(hashParameters).forEach(([ key, value ]) => {
             if (key.startsWith('config.')) {
                 const configKey = key.substring('config.'.length);
 
                 configOverwrite[configKey] = value;
+            } else if (key === 'jwt') {
+                jwt = value;
             }
         });
 
         const options = {
             configOverwrite,
-            onload: this._onIframeLoad,
+            interfaceConfigOverwrite,
+            jwt,
             parentNode: this._ref.current,
-            roomName
+            roomName,
+            sandbox: 'allow-scripts allow-same-origin allow-popups allow-forms allow-downloads'
         };
 
         this._api = new JitsiMeetExternalAPI(host, {
@@ -219,6 +246,10 @@ class Conference extends Component<Props, State> {
             ...urlParameters
         });
 
+        // This event is fired really early, at the same time as 'ready', but has been
+        // around for longer.
+        // TODO: remove after a while. -saghul
+        this._api.on('browserSupport', this._onIframeLoad);
 
         this._api.on('suspendDetected', this._onVideoConferenceEnded);
         this._api.on('readyToClose', this._onVideoConferenceEnded);
@@ -228,35 +259,11 @@ class Conference extends Component<Props, State> {
             }
         );
 
-        const { RemoteControl,
-            setupScreenSharingRender,
-            setupAlwaysOnTopRender,
-            initPopupsConfigurationRender,
-            setupWiFiStats,
-            setupPowerMonitorRender
-        } = window.jitsiNodeAPI.jitsiMeetElectronUtils;
-
-        initPopupsConfigurationRender(this._api);
-
-        const iframe = this._api.getIFrame();
-
-        setupScreenSharingRender(this._api);
-
-        if (ENABLE_REMOTE_CONTROL) {
-            new RemoteControl(iframe); // eslint-disable-line no-new
-        }
-
-        // Allow window to be on top if enabled in settings
-        if (this.props._alwaysOnTopWindowEnabled) {
-            setupAlwaysOnTopRender(this._api);
-        }
-
-        // Disable WiFiStats on mac due to jitsi-meet-electron#585
-        if (window.jitsiNodeAPI.platform !== 'darwin') {
-            setupWiFiStats(iframe);
-        }
-
-        setupPowerMonitorRender(this._api);
+        // Setup Jitsi Meet Electron SDK on this renderer.
+        window.jitsiNodeAPI.setupRenderer(this._api, {
+            enableRemoteControl: ENABLE_REMOTE_CONTROL,
+            enableAlwaysOnTopWindow: this.props._alwaysOnTopWindowEnabled
+        });
     }
 
     /**
@@ -312,6 +319,15 @@ class Conference extends Component<Props, State> {
      * @returns {void}
      */
     _onIframeLoad() {
+        if (this._iframeLoaded) {
+            // Skip spurious event after meeting close.
+            return;
+        }
+
+        console.log('IFrame loaded');
+
+        this._iframeLoaded = true;
+
         if (this._loadTimer) {
             clearTimeout(this._loadTimer);
             this._loadTimer = null;

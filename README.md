@@ -10,16 +10,4 @@ Please do not pester the Jitsi team if you have problems related to this fork th
 
 Note that I know nothing about the remote control system in Jitsi, and can probably not fix any bugs in it. Whether or not they plan on continuing to do so while it's disabled, I do not know, and you'd have to ask them.
 
-## Links
-The following releases were based off of upstream releases:
-
-[rc-2.8.6](https://github.com/TwoLeggedCat/jitsi-meet-electron/releases/tag/rc-2.8.6) (actually I borked this one; there's one extra commit in here but it was just a temporary downgrade of electron-builder so shouldn't be a problem.)
-
-[2.8.7](https://github.com/TwoLeggedCat/jitsi-meet-electron/releases/tag/rc-2.8.7)
-
-[2.8.8](https://github.com/TwoLeggedCat/jitsi-meet-electron/releases/tag/v2.8.8)
-
-[2.9.1](https://github.com/TwoLeggedCat/jitsi-meet-electron/releases/tag/v2.9.1)
-
-If you have a GitHub account, you may also download from the worflows section to get builds directly from the actions, giving me no oppurtunity to tamper with them (even though they're the same files I upload as releases). Requiring an account for this is GitHub's decision, not mine.
-
+If you have a GitHub account, you may download from the worflows section to get builds directly from the actions, giving me no oppurtunity to tamper with them (even though they're the same files I upload as releases). Requiring an account for this is GitHub's decision, not mine.

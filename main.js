@@ -1,4 +1,4 @@
-/* global __dirname, process */
+/* global __dirname */
 
 const {
     BrowserWindow,
@@ -20,6 +20,7 @@ const {
     setupScreenSharingMain
 } = require('@jitsi/electron-sdk');
 const path = require('path');
+const process = require('process');
 const URL = require('url');
 const config = require('./app/features/config');
 const { openExternalLink } = require('./app/features/utils/openExternalLink');
@@ -27,19 +28,27 @@ const pkgJson = require('./package.json');
 
 const showDevTools = Boolean(process.env.SHOW_DEV_TOOLS) || (process.argv.indexOf('--show-dev-tools') > -1);
 
-const ENABLE_REMOTE_CONTROL = false;
+// For enabling remote control, please change the ENABLE_REMOTE_CONTROL flag in
+// app/features/conference/components/Conference.js to true as well
+const ENABLE_REMOTE_CONTROL = true;
 
 // We need this because of https://github.com/electron/electron/issues/18214
 app.commandLine.appendSwitch('disable-site-isolation-trials');
 
-// This allows BrowserWindow.setContentProtection(true) to work on macOS.
-// https://github.com/electron/electron/issues/19880
-app.commandLine.appendSwitch('disable-features', 'IOSurfaceCapturer');
+// Fix screen-sharing thumbnails being missing sometimes.
+// https://github.com/electron/electron/issues/44504
+const disabledFeatures = [
+    'ThumbnailCapturerMac:capture_mode/sc_screenshot_manager',
+    'ScreenCaptureKitPickerScreen',
+    'ScreenCaptureKitStreamPickerSonoma'
+];
+
+app.commandLine.appendSwitch('disable-features', disabledFeatures.join(','));
 
 // Enable Opus RED field trial.
 app.commandLine.appendSwitch('force-fieldtrials', 'WebRTC-Audio-Red-For-Opus/Enabled/');
 
-// Enable optional PipeWire support.
+// Wayland: Enable optional PipeWire support.
 if (!app.commandLine.hasSwitch('enable-features')) {
     app.commandLine.appendSwitch('enable-features', 'WebRTCPipeWireCapturer');
 }
@@ -176,7 +185,8 @@ function createJitsiMeetWindow() {
     // Load the previous window state with fallback to defaults.
     const windowState = windowStateKeeper({
         defaultWidth: 800,
-        defaultHeight: 600
+        defaultHeight: 600,
+        fullScreen: false
     });
 
     // Path to root directory.
@@ -205,32 +215,122 @@ function createJitsiMeetWindow() {
         webPreferences: {
             enableBlinkFeatures: 'WebAssemblyCSP',
             contextIsolation: false,
-            nativeWindowOpen: true,
             nodeIntegration: false,
-            preload: path.resolve(basePath, './build/preload.js')
+            preload: path.resolve(basePath, './build/preload.js'),
+            sandbox: false
         }
+    };
+
+    const windowOpenHandler = ({ url, frameName }) => {
+        const target = getPopupTarget(url, frameName);
+
+        if (!target || target === 'browser') {
+            openExternalLink(url);
+
+            return { action: 'deny' };
+        }
+
+        if (target === 'electron') {
+            return { action: 'allow' };
+        }
+
+        return { action: 'deny' };
     };
 
     mainWindow = new BrowserWindow(options);
     windowState.manage(mainWindow);
     mainWindow.loadURL(indexURL);
 
+    mainWindow.webContents.setWindowOpenHandler(windowOpenHandler);
+
+    if (isDev) {
+        mainWindow.webContents.session.clearCache();
+    }
+
+    // Block access to file:// URLs.
+    const fileFilter = {
+        urls: [ 'file://*' ]
+    };
+
+    mainWindow.webContents.session.webRequest.onBeforeSendHeaders(fileFilter, (details, callback) => {
+        const requestedPath = path.resolve(URL.fileURLToPath(details.url));
+        const appBasePath = path.resolve(basePath);
+
+        if (!requestedPath.startsWith(appBasePath)) {
+            callback({ cancel: true });
+            console.warn(`Rejected file URL: ${details.url}`);
+
+            return;
+        }
+
+        callback({ cancel: false });
+    });
+
+    // Filter out x-frame-options and frame-ancestors CSP to allow loading jitsi via the iframe API
+    // Resolves https://github.com/jitsi/jitsi-meet-electron/issues/285
+    mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+        delete details.responseHeaders['x-frame-options'];
+
+        if (details.responseHeaders['content-security-policy']) {
+            const cspFiltered = details.responseHeaders['content-security-policy'][0]
+                .split(';')
+                .filter(x => x.indexOf('frame-ancestors') === -1)
+                .join(';');
+
+            details.responseHeaders['content-security-policy'] = [ cspFiltered ];
+        }
+
+        if (details.responseHeaders['Content-Security-Policy']) {
+            const cspFiltered = details.responseHeaders['Content-Security-Policy'][0]
+                .split(';')
+                .filter(x => x.indexOf('frame-ancestors') === -1)
+                .join(';');
+
+            details.responseHeaders['Content-Security-Policy'] = [ cspFiltered ];
+        }
+
+        callback({
+            responseHeaders: details.responseHeaders
+        });
+    });
+
+    // Block redirects.
+    const allowedRedirects = [
+        'http:',
+        'https:',
+        'ws:',
+        'wss:'
+    ];
+
+    mainWindow.webContents.addListener('will-redirect', (ev, url) => {
+        const requestedUrl = new URL.URL(url);
+
+        if (!allowedRedirects.includes(requestedUrl.protocol)) {
+            console.warn(`Disallowing redirect to ${url}`);
+            ev.preventDefault();
+        }
+    });
+
+    // Block opening any external applications.
+    mainWindow.webContents.session.setPermissionRequestHandler((_, permission, callback, details) => {
+        if (permission === 'openExternal') {
+            console.warn(`Disallowing opening ${details.externalURL}`);
+            callback(false);
+
+            return;
+        }
+
+        callback(true);
+    });
+
     initPopupsConfigurationMain(mainWindow);
-    setupAlwaysOnTopMain(mainWindow);
+    setupAlwaysOnTopMain(mainWindow, null, windowOpenHandler);
     setupPowerMonitorMain(mainWindow);
     setupScreenSharingMain(mainWindow, config.default.appName, pkgJson.build.appId);
     if (ENABLE_REMOTE_CONTROL) {
         new RemoteControlMain(mainWindow); // eslint-disable-line no-new
     }
 
-    mainWindow.webContents.on('new-window', (event, url, frameName) => {
-        const target = getPopupTarget(url, frameName);
-
-        if (!target || target === 'browser') {
-            event.preventDefault();
-            openExternalLink(url);
-        }
-    });
     mainWindow.on('closed', () => {
         mainWindow = null;
     });
@@ -385,4 +485,11 @@ ipcMain.on('renderer-ready', () => {
             .webContents
             .send('protocol-data-msg', protocolDataForFrontApp);
     }
+});
+
+/**
+ * Handle opening external links in the main process.
+ */
+ipcMain.on('jitsi-open-url', (event, someUrl) => {
+    openExternalLink(someUrl);
 });

@@ -6,53 +6,61 @@ on:
 jobs:
   build-linux:
     name: Linux
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-node@v2
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
       with:
-        node-version: '16'
+        node-version: '20'
     - name: Build it
       run: |
-        npm install
-        npm run dist
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v2
-      with:
-        name: jitsi-meet-amd64.deb
-        path: dist/jitsi-meet-amd64.deb
-  build-mac:
-    name: macOS
-    runs-on: macos-11
-    steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-node@v2
-      with:
-        node-version: '16'
-    - name: Build it
-      run: |
-        npm install
+        npm ci
         npm run lint
         npm run dist
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v4
       with:
-        name: jitsi-meet.dmg
-        path: dist/jitsi-meet.dmg
-  build-windows:
-    name: Windows
-    runs-on: windows-2019
+        name: linux-binaries
+        path: |
+          dist/jitsi-meet-amd64.deb
+          dist/jitsi-meet-x86_64.AppImage
+          dist/jitsi-meet-arm64.deb
+          dist/jitsi-meet-arm64.AppImage
+          dist/latest-linux.yml
+          dist/latest-linux-arm64.yml
+  build-mac:
+    name: macOS
+    runs-on: macos-14
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-node@v2
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
       with:
-        node-version: '16'
+        node-version: '20'
     - name: Build it
       run: |
-        npm install
+        npm ci
         npm run dist
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v4
       with:
-        name: jitsi-meet.exe
-        path: dist/jitsi-meet.exe
+        name: mac-binaries
+        path: |
+          dist/jitsi-meet.dmg
+          dist/jitsi-meet.zip
+          dist/latest-mac.yml
+  build-windows:
+    name: Windows
+    runs-on: windows-2022
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    - name: Build it
+      run: |
+        npm ci
+        npm run dist
+    - uses: actions/upload-artifact@v4
+      with:
+        name: windows-binaries
+        path: |
+          dist/jitsi-meet.exe
+          dist/latest.yml
